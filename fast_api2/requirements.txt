@@ -1,0 +1,7 @@
+fastapi==0.68.0
+httpx==0.24.0  # Cambia la versión según las necesidades de tus dependencias
+clickhouse-driver==0.2.0
+python-dotenv==0.19.0
+schedule==1.1.0
+python-telegram-bot==20.3
+pyTelegramBotAPI

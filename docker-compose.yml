@@ -1,0 +1,31 @@
+version: '3'
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./script.sql:/docker-entrypoint-initdb.d/initdb.sql
+    
+  fastapi-service_1:
+    
+    build:
+      context: .
+      dockerfile: fast_api1/Dockerfile
+    ports:
+      - "8011:8000"
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8123
+  fastapi-service_2:
+    
+    build:
+      context: .
+      dockerfile: fast_api2/Dockerfile
+    ports:
+      - "8010:8000"
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8123
