@@ -1,45 +1,155 @@
-#include <Arduino.h> // Añadimos esta línea
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
+#include <HTTPClient.h>
+#include <FreeRTOS.h>
+#include <liquidcrystal_i2c.h>
 
-const byte pinCaudalimetro = 4; // Pin D4 en la ESP32
+// Configuración WiFi
+const char* ssid = "Econtel_Ecuador";
+const char* password = "Platon31053105";
 
-volatile uint32_t contadorPulsos = 0;
-unsigned long tiempoAnterior = 0;
-float factorCalibracion = 7.5; // Ajusta este valor según las especificaciones del SF201
-float totalLitros = 0.0; // Variable para almacenar el total de litros
+// Configuración del caudalímetro
+const int flowPin = D2; // Pin conectado al caudalímetro
+volatile int pulseCount = 0;
 
-void IRAM_ATTR contadorPulsosISR() {
-  contadorPulsos++;
+// Configuración del relé
+const int relayPin = D1;
+
+// SERVIDOR NTP 
+const char* ntpServer = "1.south-america.pool.ntp.org";
+// Variables compartidas
+volatile bool flowDetected = false;
+
+// Prototipos
+void IRAM_ATTR pulseCounter();
+void measurementTask(void *pvParameters);
+void thresholdControlTask(void *pvParameters);
+
+// Conversión de pulsos a volumen
+float calculateVolume(int pulses) {
+    const float calibrationFactor = 7.5; // Ajustar según el caudalímetro
+    return (pulses / calibrationFactor); // Litros
+}
+// Función para obtener la hora local
+void printLocalTime()
+{
+  struct tm timeinfo;
+  int retryCount = 0;
+  while (!getLocalTime(&timeinfo) && retryCount < 5) {  // Reintentar hasta 5 veces
+    Serial.println("Failed to obtain time, retrying...");
+    delay(2000);
+    retryCount++;
+  }
+  if(retryCount == 5) {
+    Serial.println("Could not obtain time after several attempts");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+}
+// MOSTRAR EN LCD 16X2
+void mostrarEnLCD() {
+  lcd.clear();
+  // Mostrar Litros Diarios en la primera línea LCD
+  lcd.setCursor(0, 0);
+  lcd.print("Litros Diarios: " + String(totalLiters));
+  delay(2000); // Esperar 2 segundos
+  lcd.clear();
 }
 
+// HTTP POST
+void sendData(float volume) {
+    HTTPClient http;
+    http.begin("http://192.168.1.100:8080/insert_flujo_agua"); // Cambia la URL
+    http.addHeader("Content-Type", "application/json");
+
+    String payload = "{\"volume\":" + String(volume) + "}";
+    int httpResponseCode = http.POST(payload);
+    http.end();
+}
+
+// HTTP GET PARA LEER ESTADO 
+bool getThresholdStatus() {
+    HTTPClient http;
+    http.begin("http://192.168.1.100:8080/estado_umbral/1"); // Cambia la URL
+    int httpResponseCode = http.GET();
+    if (httpResponseCode == 200) {
+        String response = http.getString();
+        http.end();
+        return response == "true";
+    }
+    http.end();
+    return false;
+}
+
+// Configuración inicial
 void setup() {
-  Serial.begin(115200);
-   
-  pinMode(pinCaudalimetro, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(pinCaudalimetro), contadorPulsosISR, FALLING);
+    // Configuración de pines
+    pinMode(flowPin, INPUT_PULLUP);
+    pinMode(relayPin, OUTPUT);
+    digitalWrite(relayPin, LOW);
+
+    // Configuración de interrupciones
+    attachInterrupt(digitalPinToInterrupt(flowPin), pulseCounter, RISING);
+
+    // Conexión WiFi
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+    }
+
+    // Crear tareas
+    xTaskCreate(measurementTask, "Measurement Task", 2048, NULL, 1, NULL);
+    xTaskCreate(thresholdControlTask, "Threshold Control Task", 2048, NULL, 1, NULL);
+
+    // Deep Sleep inicial
+    ESP.deepSleep(0);
 }
 
 void loop() {
-  if ((millis() - tiempoAnterior) > 1000) { // Cada 1 segundo
-    detachInterrupt(pinCaudalimetro);
+    // Empty, manejado por RTOS
+}
 
-    // Calcula el caudal en L/min
-    float caudalLPM = ((float)contadorPulsos / factorCalibracion);
+// Tarea de medición
+void measurementTask(void *pvParameters) {
+    while (true) {
+        if (flowDetected) {
+            detachInterrupt(digitalPinToInterrupt(flowPin));
 
-    // Calcula el volumen en litros durante el intervalo de tiempo (1 segundo)
-    float litrosEnIntervalo = (caudalLPM / 60.0); // Convertimos de L/min a L/segundo
+            // Medir pulsos por un periodo
+            int pulses = pulseCount;
+            pulseCount = 0;
+            flowDetected = false;
 
-    // Acumula el volumen total
-    totalLitros += litrosEnIntervalo;
+            // Obtener volumen
+            float volume = calculateVolume(pulses);
 
-    Serial.print("Caudal: ");
-    Serial.print(caudalLPM);
-    Serial.print(" L/min, Total Litros: ");
-    Serial.println(totalLitros);
+            // Enviar datos por HTTP POST
+            sendData(volume);
 
-    contadorPulsos = 0;
-    tiempoAnterior = millis();
+            attachInterrupt(digitalPinToInterrupt(flowPin), pulseCounter, RISING);
 
-    attachInterrupt(digitalPinToInterrupt(pinCaudalimetro), contadorPulsosISR, FALLING);
-  }
+            // Entrar a Deep Sleep
+            ESP.deepSleep(0);
+        }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+// Tarea de control de umbral
+void thresholdControlTask(void *pvParameters) {
+    while (true) {
+        bool thresholdReached = getThresholdStatus();
+        digitalWrite(relayPin, thresholdReached ? LOW : HIGH);
+
+        // Esperar antes de deep sleep
+        if (!flowDetected) {
+            ESP.deepSleep(60000000); // 1 minuto
+        }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+// Manejo de interrupciones
+void IRAM_ATTR pulseCounter() {
+    pulseCount++;
+    flowDetected = true;
 }

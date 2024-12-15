@@ -4,17 +4,9 @@ from clickhouse_driver import Client
 import clickhouse_connect
 import socket
 import threading
-
 import time
 import requests
-
-
-
-
 # Conectar a ClickHouse
-
-
-
 app = FastAPI()
 
 @app.get("/")
@@ -26,7 +18,7 @@ def read_root():
     client = clickhouse_connect.get_client(host='clickhouse', username='default', password='')
 
     # Ejemplo de consulta para verificar conexión
-    result = client.query("SELECT * from  example_db.FlujoAgua;")
+    result = client.query("SELECT * from  riego.FlujoAgua;")
     print(result.result_rows)
     """
     client = clickhouse_connect.get_client(host='clickhouse', username='default', password='')
@@ -41,10 +33,10 @@ def visualizar():
     #socket.socket().connect(('telemetria-proyecto-clickhouse-1', 8123))
     print("Conexión establecida correctamente")
     #return {"message": "Hola, este es mi microservicio con FastAPI y ClickHouse"}
-    client = clickhouse_connect.get_client(host='clickhouse', username='default', password='', database='example_db')
+    client = clickhouse_connect.get_client(host='clickhouse', username='default', password='', database='riego')
 
     # Ejemplo de consulta para verificar conexión
-    result = client.query("SELECT * from  example_db.FlujoAgua;")
+    result = client.query("SELECT * from  riego.FlujoAgua;")
     print(result.result_rows)
     """
     client = clickhouse_connect.get_client(host='clickhouse', username='default', password='')
