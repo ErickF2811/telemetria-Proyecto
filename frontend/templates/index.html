@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather App</title>
+    <title>Dashboard - Grifo Inteligente</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-    <h1>Weather in {{ weather.city }}</h1>
-    <p>Temperature: {{ weather.temperature }} °C</p>
-    <p>Description: {{ weather.description }}</p>
-    <p>Humidity: {{ weather.humidity }}%</p>
-
+    <header>
+        <h1>Dashboard - Grifo Inteligente</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Consumo de Agua</h2>
+            <canvas id="graficoConsumo"></canvas>
+        </section>
+        <section>
+            <h2>Actualizar Umbral</h2>
+            <button id="btnActualizarUmbral">Actualizar Umbral</button>
+        </section>
+    </main>
+    <script src="/static/script.js"></script>
 </body>
 </html>

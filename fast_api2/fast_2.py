@@ -9,6 +9,16 @@ import requests
 # Conectar a ClickHouse
 app = FastAPI()
 
+# Modelos de datos
+class UmbralUpdate(BaseModel):
+    ID_esp: int
+    nuevo_umbral: str
+    password: str
+
+class PasswordUpdate(BaseModel):
+    ID_esp: int
+    nueva_password: str
+
 @app.get("/")
 def read_root():
     #enviar_resultado_bot()
@@ -43,3 +53,43 @@ def visualizar():
     result = client.query("SELECT 'Conexión Exitosa!'")
     """
     return {"message": result.result_rows}
+
+# Endpoint para visualizar datos de consumo
+@app.get("/consumo")
+def get_consumo(ID_esp: int):
+    try:
+        query = f"SELECT Time_stam, Cantidad_agua FROM riego.FlujoAgua WHERE ID_esp = {ID_esp} ORDER BY Time_stam;"
+        result = client.query(query).result_rows
+        if not result:
+            raise HTTPException(status_code=404, detail="No se encontraron datos para el ID especificado.")
+        return {"consumo": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Endpoint para actualizar el umbral
+@app.put("/umbral")
+def update_umbral(data: UmbralUpdate):
+    try:
+        # Verificar contraseña
+        query_password = f"SELECT Contra FROM riego.Umbral WHERE ID_esp = {data.ID_esp};"
+        result = client.query(query_password).result_rows
+        if not result or result[0][0] != data.password:
+            raise HTTPException(status_code=401, detail="Contraseña incorrecta.")
+        
+        # Actualizar umbral
+        update_query = f"ALTER TABLE riego.Umbral UPDATE Umbral = '{data.nuevo_umbral}' WHERE ID_esp = {data.ID_esp};"
+        client.command(update_query)
+        return {"message": "Umbral actualizado exitosamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Endpoint para actualizar la contraseña
+@app.put("/password")
+def update_password(data: PasswordUpdate):
+    try:
+        # Actualizar contraseña
+        update_query = f"ALTER TABLE riego.Umbral UPDATE Contra = '{data.nueva_password}' WHERE ID_esp = {data.ID_esp};"
+        client.command(update_query)
+        return {"message": "Contraseña actualizada exitosamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
