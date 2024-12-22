@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from clickhouse_driver import Client
+from pydantic import BaseModel
 import clickhouse_connect
 import socket
 import threading

@@ -35,7 +35,7 @@ def insert_flujo_agua(data: FlujoAguaRequest):
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         # Consulta de inserción en la tabla FlujoAgua
         query = f"""
-    INSERT INTO riego.FlujoAgua (ID_esp, Time_stam, Flujo_de_agua, Cantidad_agua)
+    INSERT INTO riego.FlujoAgua (ID_esp, Time_stam, Cantidad_agua)
     VALUES ({data.ID_esp}, '{current_time}', {data.Cantidad_agua})"""
 
         client.command(query, {
