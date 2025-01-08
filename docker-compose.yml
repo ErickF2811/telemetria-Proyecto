@@ -29,3 +29,15 @@ services:
     environment:
       - CLICKHOUSE_HOST=clickhouse
       - CLICKHOUSE_PORT=8123
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    environment:
+    - FLASK_APP=main.py 
+    - FLASK_ENV=development
+    ports:
+      - "5000:5000"
+    depends_on:
+      - fastapi-service_1
+      - fastapi-service_2
