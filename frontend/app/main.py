@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 import clickhouse_connect
-
+from clickhouse_driver import Client 
 app = Flask(__name__)
 
 # Configurar ClickHouse

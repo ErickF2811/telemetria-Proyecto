@@ -1,7 +1,7 @@
-FROM python:3.9
+FROM python:3.8-slim
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir requests Flask clickhouse-driver==0.2.0 clickhouse_connect
 COPY app/ /app
 COPY templates/ /app/templates
 COPY static/ /app/static

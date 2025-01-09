@@ -32,7 +32,7 @@ float calculateVolume(int pulses) {
 // HTTP POST
 void sendData(float volume) {
     HTTPClient http;
-    http.begin("http://192.168.169.25:8011/insert_flujo_agua"); // Cambia la URL
+    http.begin("http://apiriego.econtel.com.ec:8011/insert_flujo_agua"); // Cambia la URL
     http.addHeader("Content-Type", "application/json");
 
     // Construcción del JSON correctamente formateado
@@ -74,7 +74,7 @@ void calculateFlowRate() {
 // HTTP GET PARA LEER ESTADO 
 bool getThresholdStatus() {
     HTTPClient http;
-    http.begin("http://192.168.169.25:8011/estado_umbral/1"); // Cambia la URL
+    http.begin("http://apiriego.econtel.com.ec:8011/estado_umbral/1"); // Cambia la URL
     int httpResponseCode = http.GET();
     if (httpResponseCode == 200) {
         String response = http.getString();
@@ -111,9 +111,6 @@ void setup() {
     attachInterrupt(flowPin,pulseCounter, RISING);
     pinMode(relayPin, OUTPUT);
     digitalWrite(relayPin, LOW);
-
-    
-
     // Conexión WiFi
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
@@ -121,14 +118,8 @@ void setup() {
         delay(1000);
     }
     Serial.println("Se conectó al Wifi");
-    // Configuración de interrupciones
-    // Crear tareas
-    // xTaskCreate(measurementTask, "Measurement Task", 2048, NULL, 1, NULL);
-    //xTaskCreate(thresholdControlTask, "Threshold Control Task", 2048, NULL, 1, NULL);
     xTaskCreate(calculateFlowRateTask, "Calcular Caudal", 2048, NULL, 1, NULL);
     xTaskCreate(enviarLitrosAlServidorTask, "Enviar Litros al Servidor", 8192, NULL, 1, NULL);
-    // Deep Sleep inicial
-    //ESP.deepSleep(0);
 }
 
 void loop() {

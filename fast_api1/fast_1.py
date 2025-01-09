@@ -55,7 +55,7 @@ def get_estado_umbral(id_esp: int):
         
         # Consulta para obtener el estado del umbral
         query = f"""
-        SELECT Estado_Valvula
+        SELECT Estado_valvula
         FROM riego.EstadoValvula
         WHERE ID_esp = {id_esp}
         LIMIT 1
@@ -66,6 +66,6 @@ def get_estado_umbral(id_esp: int):
             return {"message": "No se encontraron datos para el ID_esp proporcionado."}
         
         umbral_superado = result.result_rows[0][0]
-        return {"ID_esp": id_esp, "Estado_Valvula": umbral_superado}
+        return {"ID_esp": id_esp, "Estado_valvula": umbral_superado}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener el estado del umbral: {str(e)}")

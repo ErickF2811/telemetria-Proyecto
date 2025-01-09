@@ -1,2 +1,4 @@
 Flask
 requests
+clickhouse-driver==0.2.0
+
