@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS riego.EstadoValvula (
 ) ENGINE = MergeTree()
 ORDER BY ID_esp;
 
+INSERT INTO riego.EstadoValvula (ID_esp, Estado_valvula)
+VALUES (1, "true")
+
 /* CREATE TABLE IF NOT EXISTS riego.ConsumoDiario (
     ID_esp Int32,
     Cantidad_diaria Float32,

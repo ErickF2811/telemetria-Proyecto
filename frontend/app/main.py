@@ -26,5 +26,23 @@ def update_password():
     response = requests.put(f"{MICROSERVICE_URL}/password", json=data)
     return jsonify(response.json())
 
+@app.route("/consumo", methods=["GET"])
+def get_consumo():
+    ID_esp = request.args.get("ID_esp", default=1, type=int)
+    fecha_inicio = request.args.get("fecha_inicio", type=str)
+    fecha_fin = request.args.get("fecha_fin", type=str)
+
+    # Validar fechas
+    if not fecha_inicio or not fecha_fin:
+        return jsonify({"error": "fecha_inicio y fecha_fin son requeridos"}), 400
+
+    # Llamar al microservicio
+    response = requests.get(
+        f"{MICROSERVICE_URL}/consumo",
+        params={"ID_esp": ID_esp, "fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin}
+    )
+    return jsonify(response.json())
+
+
 if __name__ == "__main__":
     app.run(debug=True)

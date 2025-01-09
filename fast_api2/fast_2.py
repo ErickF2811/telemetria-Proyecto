@@ -56,16 +56,73 @@ def visualizar():
     return {"message": result.result_rows}
 
 # Endpoint para visualizar datos de consumo
-@app.get("/consumo")
-def get_consumo(ID_esp: int):
+@app.route('/consumo', methods=['GET'])
+def get_consumo():
+    # Obtener parámetros de la solicitud
+    ID_esp = request.args.get('ID_esp', type=int)
+    fecha_inicio = request.args.get('fecha_inicio', type=str)
+    fecha_fin = request.args.get('fecha_fin', type=str)
+
+    # Validar que los parámetros requeridos estén presentes
+    if not ID_esp or not fecha_inicio or not fecha_fin:
+        return jsonify({"error": "ID_esp, fecha_inicio y fecha_fin son requeridos"}), 400
+
     try:
-        query = f"SELECT Time_stam, Cantidad_agua FROM riego.FlujoAgua WHERE ID_esp = {ID_esp} ORDER BY Time_stam;"
-        result = client.query(query).result_rows
-        if not result:
-            raise HTTPException(status_code=404, detail="No se encontraron datos para el ID especificado.")
-        return {"consumo": result}
+        client = clickhouse_connect.get_client(host='clickhouse', username='default', password='')
+
+        # Crear consulta SQL para filtrar por fechas
+        query = text("""
+            SELECT Time_stam, Cantidad_agua 
+            FROM consumos 
+            WHERE ID_esp = :ID_esp 
+            AND DATE(Time_stam) BETWEEN :fecha_inicio AND :fecha_fin
+            ORDER BY Time_stam
+        """)
+        client = clickhouse_connect.get_client(host='clickhouse', username='default', password='', database='riego')
+        result = client.query(query)
+        rows = result.result_rows
+        # Formatear los datos
+        consumo_data = [{"Time_stam": row[0], "Cantidad_agua": row[1]} for row in rows]
+
+        return jsonify({"ID_esp": ID_esp, "consumo": consumo_data})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error al mostrar consumo: {str(e)}")
+
+@app.get("/total_consumo")
+def get_total_consumo():
+    # Obtener parámetros de la solicitud
+    ID_esp = request.args.get('ID_esp', type=int)
+    fecha_inicio = request.args.get('fecha_inicio', type=str)
+    fecha_fin = request.args.get('fecha_fin', type=str)
+    # Validar que los parámetros requeridos estén presentes
+    if not ID_esp or not fecha_inicio or not fecha_fin:
+        return jsonify({"error": "ID_esp, fecha_inicio y fecha_fin son requeridos"}), 400
+
+
+    try:
+        # Conectar a ClickHouse
+        client = get_client(host=CLICKHOUSE_HOST, username=CLICKHOUSE_USERNAME, password=CLICKHOUSE_PASSWORD, database=CLICKHOUSE_DB)
+
+        # Crear la consulta SQL para calcular el total
+        query = f"""
+            SELECT SUM(Cantidad_agua) AS Total_Consumo
+            FROM FlujoAgua
+            WHERE ID_esp = {ID_esp}
+              AND toDate(Time_stam) BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+        """
+
+        # Ejecutar la consulta
+        result = client.query(query)
+        total_consumo = result.result_rows[0][0] if result.result_rows else 0
+
+        return {
+            "ID_esp": ID_esp,
+            "fecha_inicio": fecha_inicio,
+            "fecha_fin": fecha_fin,
+            "total_consumo": total_consumo
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al calcular el total de consumo: {str(e)}")
 
 # Endpoint para actualizar el umbral
 @app.put("/umbral")

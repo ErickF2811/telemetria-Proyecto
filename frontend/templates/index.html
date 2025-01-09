@@ -15,6 +15,15 @@
             <div id="data-container"></div>
         </div>
         <div>
+            <h2>Filtrar por Rango de Fechas</h2>
+            <form id="rango-fechas-form">
+                <input type="number" id="rango-id" placeholder="ID ESP" required>
+                <input type="date" id="fecha-inicio" required>
+                <input type="date" id="fecha-fin" required>
+                <button type="submit">Filtrar</button>
+            </form>
+        </div>
+        <div>
             <h2>Gráfico de Consumo</h2>
             <canvas id="consumo-chart" width="400" height="200"></canvas>
         </div>

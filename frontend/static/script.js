@@ -8,67 +8,93 @@ document.getElementById("visualizar-btn").addEventListener("click", () => {
         .catch(error => console.error("Error al obtener datos:", error));
 });
 
-function fetchAndPlotConsumo(idEsp) {
-    fetch(`/consumo?ID_esp=${idEsp}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.consumo) {
-                const timestamps = data.consumo.map(row => row[0]); // Extraer Time_stam
-                const consumos = data.consumo.map(row => row[1]); // Extraer Cantidad_agua
+// Selecciona el canvas y define el contexto
+const chartCanvas = document.getElementById("consumo-chart");
+const chartContext = chartCanvas.getContext("2d");
 
-                // Actualizar o crear el gráfico
-                if (consumoChart) {
-                    consumoChart.data.labels = timestamps;
-                    consumoChart.data.datasets[0].data = consumos;
-                    consumoChart.update();
-                } else {
-                    consumoChart = new Chart(chartContext, {
-                        type: "line",
-                        data: {
-                            labels: timestamps,
-                            datasets: [{
-                                label: "Consumo de Agua",
-                                data: consumos,
-                                borderColor: "rgba(75, 192, 192, 1)",
-                                backgroundColor: "rgba(75, 192, 192, 0.2)",
-                                borderWidth: 2,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    position: "top"
-                                }
+// Variable global para el gráfico
+let consumoChart;
+
+// Intervalo para actualizar automáticamente
+let autoUpdateInterval;
+
+// Evento para enviar el formulario y obtener los datos
+document.getElementById("rango-fechas-form").addEventListener("submit", (e) => {
+    e.preventDefault(); // Evita el comportamiento predeterminado del formulario
+
+    const ID_esp = document.getElementById("rango-id").value;
+    const fechaInicio = document.getElementById("fecha-inicio").value;
+    const fechaFin = document.getElementById("fecha-fin").value;
+
+    // Función para obtener y actualizar datos
+    const fetchAndUpdate = () => {
+        fetch(`/consumo?ID_esp=${ID_esp}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.consumo) {
+                    const timestamps = data.consumo.map((row) => row.Time_stam);
+                    const consumos = data.consumo.map((row) => row.Cantidad_agua);
+
+                    // Si el gráfico ya existe, actualízalo
+                    if (consumoChart) {
+                        consumoChart.data.labels = timestamps;
+                        consumoChart.data.datasets[0].data = consumos;
+                        consumoChart.update();
+                    } else {
+                        // Si no existe, crea un nuevo gráfico
+                        consumoChart = new Chart(chartContext, {
+                            type: "line",
+                            data: {
+                                labels: timestamps,
+                                datasets: [
+                                    {
+                                        label: "Consumo de Agua",
+                                        data: consumos,
+                                        borderColor: "rgba(75, 192, 192, 1)",
+                                        backgroundColor: "rgba(75, 192, 192, 0.2)",
+                                        borderWidth: 2,
+                                        tension: 0.4,
+                                    },
+                                ],
                             },
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: "Fecha y Hora"
-                                    }
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: "top",
+                                    },
                                 },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: "Cantidad de Agua (L)"
-                                    }
-                                }
-                            }
-                        }
-                    });
+                                scales: {
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: "Fecha y Hora",
+                                        },
+                                    },
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: "Cantidad de Agua (L)",
+                                        },
+                                    },
+                                },
+                            },
+                        });
+                    }
+                } else {
+                    console.error("No se encontraron datos en el rango especificado.");
                 }
-            } else {
-                console.error("No se encontraron datos de consumo.");
-            }
-        })
-        .catch(error => console.error("Error al obtener datos de consumo:", error));
-}
+            })
+            .catch((error) => console.error("Error al actualizar datos:", error));
+    };
 
-// Llamar a fetchAndPlotConsumo con un ID de ejemplo
-fetchAndPlotConsumo(1); // Cambia el "1" por un ID válido para pruebas
+    // Llama a la función para obtener datos y configurar actualizaciones automáticas
+    fetchAndUpdate();
 
+    // Configura el intervalo para actualizar automáticamente cada 5 segundos
+    clearInterval(autoUpdateInterval);
+    autoUpdateInterval = setInterval(fetchAndUpdate, 5000); // Ajusta el tiempo según sea necesario
+});
 
 
 document.getElementById("umbral-form").addEventListener("submit", (e) => {
