@@ -3,24 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Grifo Inteligente</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Gestión de Riego</title>
+    <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
-    <header>
-        <h1>Dashboard - Grifo Inteligente</h1>
-    </header>
-    <main>
-        <section>
-            <h2>Consumo de Agua</h2>
-            <canvas id="graficoConsumo"></canvas>
-        </section>
-        <section>
+    <div class="container">
+        <h1>Gestión de Riego</h1>
+        <div>
+            <h2>Visualizar Datos</h2>
+            <button id="visualizar-btn">Ver Datos</button>
+            <div id="data-container"></div>
+        </div>
+        <div>
+            <h2>Gráfico de Consumo</h2>
+            <canvas id="consumo-chart" width="400" height="200"></canvas>
+        </div>
+        <div>
             <h2>Actualizar Umbral</h2>
-            <button id="btnActualizarUmbral">Actualizar Umbral</button>
-        </section>
-    </main>
-    <script src="/static/script.js"></script>
+            <form id="umbral-form">
+                <input type="number" id="umbral-id" placeholder="ID ESP" required>
+                <input type="text" id="nuevo-umbral" placeholder="Nuevo Umbral" required>
+                <input type="password" id="password-umbral" placeholder="Contraseña" required>
+                <button type="submit">Actualizar</button>
+            </form>
+            <p id="umbral-status"></p>
+        </div>
+        <div>
+            <h2>Actualizar Contraseña</h2>
+            <form id="password-form">
+                <input type="number" id="password-id" placeholder="ID ESP" required>
+                <input type="password" id="nueva-password" placeholder="Nueva Contraseña" required>
+                <button type="submit">Actualizar</button>
+            </form>
+            <p id="password-status"></p>
+        </div>
+    </div>
+    <script src="static/script.js"></script>
 </body>
 </html>
